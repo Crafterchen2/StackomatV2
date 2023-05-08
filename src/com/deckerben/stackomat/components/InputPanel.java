@@ -6,16 +6,23 @@ import com.deckerben.stackomat.ContainerUnitEnum;
 import com.deckerben.stackomat.ItemUnitEnum;
 
 import javax.swing.*;
+import javax.swing.event.ChangeListener;
 import java.awt.*;
+import java.util.HashMap;
 
 public class InputPanel extends JPanel {
+    private final ItemIOField<ItemUnitEnum> rawItemInput;
+    private final ItemIOField<ContainerUnitEnum> slotInput;
+    private final ItemIOField<ContainerUnitEnum> shulkerInput;
+    private final ItemIOField<ContainerUnitEnum> chestInput;
+    private final ItemIOField<ContainerUnitEnum> shulkerChestInput;
 
     //Felder
 
     //Listener
 
     //Konstruktoren
-    public InputPanel() {
+    public InputPanel(ChangeListener inputListener) {
         ExpandableTexture border = new ExpandableTexture(true) {
             @Override
             protected boolean globalScaleUpdated() {
@@ -24,24 +31,41 @@ public class InputPanel extends JPanel {
             }
         };
         border.setBorderTexType(McComponentTextureEnum.PANEL_DARK);
-        setBorder(border);
-        setBackground(ExpandableTexture.getCenterColor(border.getBorderTexType()));
+        //setBorder(border);
+        //setBackground(ExpandableTexture.getCenterColor(border.getBorderTexType()));
         setLayout(new BorderLayout());
         JLabel label = new JLabel("Eingabe");
         add(label,BorderLayout.NORTH);
         JPanel list = new JPanel(new GridLayout(5,1));
         list.setOpaque(false);
-        list.add(new ItemIOField<>(true, ItemUnitEnum.FULL_STACK));
-        list.add(new ItemIOField<>(true, ContainerUnitEnum.SLOTS));
-        list.add(new ItemIOField<>(true, ContainerUnitEnum.SHULKER));
-        list.add(new ItemIOField<>(true, ContainerUnitEnum.DOUBLE_CHEST));
-        list.add(new ItemIOField<>(true, ContainerUnitEnum.SHULKER_IN_DOUBLE_CHEST));
+        rawItemInput = new ItemIOField<>(inputListener, ItemUnitEnum.FULL_STACK);
+        slotInput = new ItemIOField<>(inputListener, ContainerUnitEnum.SLOTS);
+        shulkerInput = new ItemIOField<>(inputListener, ContainerUnitEnum.SHULKER);
+        chestInput = new ItemIOField<>(inputListener, ContainerUnitEnum.DOUBLE_CHEST);
+        shulkerChestInput = new ItemIOField<>(inputListener, ContainerUnitEnum.SHULKER_IN_DOUBLE_CHEST);
+        list.add(rawItemInput);
+        list.add(slotInput);
+        list.add(shulkerInput);
+        list.add(chestInput);
+        list.add(shulkerChestInput);
         add(list,BorderLayout.CENTER);
     }
 
     //Methoden
 
     //Getter
+    public HashMap<ContainerUnitEnum, Integer> getInputValues(){
+        HashMap<ContainerUnitEnum, Integer> rv = new HashMap<>(4);
+        rv.put(slotInput.getUnit(),slotInput.getNum());
+        rv.put(shulkerInput.getUnit(),shulkerInput.getNum());
+        rv.put(chestInput.getUnit(),chestInput.getNum());
+        rv.put(shulkerChestInput.getUnit(),shulkerChestInput.getNum());
+        return rv;
+    }
+
+    public int getRawItemAmount(){
+        return rawItemInput.getNum();
+    }
 
     //Setter
 

@@ -12,13 +12,17 @@ public class UnitChooser extends JComponent {
 
     //Felder
     private final JLabel display = new JLabel();
+    private final JComboBox<ItemUnitEnum> selector;
 
     //Listener
 
     //Konstruktoren
-    public UnitChooser() {
+    public UnitChooser(ActionListener actionListener) {
         setLayout(new GridLayout(1,1));
-        add(new JComboBox<>(ItemUnitEnum.values()));
+        selector = new JComboBox<>(ItemUnitEnum.values());
+        selector.setSelectedItem(ItemUnitEnum.FULL_STACK);
+        selector.addActionListener(actionListener);
+        add(selector);
     }
 
     //Methoden
@@ -27,6 +31,9 @@ public class UnitChooser extends JComponent {
     }
 
     //Getter
+    public ItemUnitEnum getSelectedUnit(){
+        return selector.getItemAt(selector.getSelectedIndex());
+    }
 
     //Setter
 

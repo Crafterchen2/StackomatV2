@@ -51,7 +51,7 @@ public class CalcTest {
     }
 
     private static void printOutput(Stackomat stackomat) {
-        System.out.println(stackomat.getOutputFullSlotNum()+" + "+ stackomat.getOverflowNum());
+        System.out.println(stackomat.getFullSlotNum()+" + "+ stackomat.getOverflowNum());
         System.out.println(stackomat.getOccupiedSlots()+" @ "+ stackomat.getFillPercent());
         HashMap<ContainerUnitEnum,Integer> outputContainer = stackomat.getOutputContainer();
         outputContainer.forEach((containerUnitEnum, integer) -> System.out.println(containerUnitEnum.name()+": "+integer));

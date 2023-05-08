@@ -4,6 +4,7 @@ import com.deckerben.minecraft.laf.ExpandableTexture;
 import com.deckerben.stackomat.UnitEnumInterface;
 
 import javax.swing.*;
+import javax.swing.event.ChangeListener;
 import java.awt.*;
 
 public class ItemIOField<U extends UnitEnumInterface> extends JComponent {
@@ -12,15 +13,30 @@ public class ItemIOField<U extends UnitEnumInterface> extends JComponent {
     private final boolean IS_INPUT;
     private final U UNIT;
     private final SpinnerNumberModel numberModel = new SpinnerNumberModel(0,0,Integer.MAX_VALUE,1);
-    private final ItemDisplay<U> iconDisplay;
+    protected ItemDisplay<U> iconDisplay;
+    private final ChangeListener inputListener;
 
     private int num = 0;
+    private JTextField numDisplay;
     //Listener
 
     //Konstruktoren
-    public ItemIOField(final boolean isInput, final U unit) {
-        IS_INPUT = isInput;
+    public ItemIOField(final U unit) {
+        IS_INPUT = false;
         UNIT = unit;
+        inputListener = null;
+        initializeComponent();
+    }
+
+    public ItemIOField(final ChangeListener inputListener, final U unit){
+        IS_INPUT = true;
+        UNIT = unit;
+        this.inputListener = inputListener;
+        initializeComponent();
+    }
+
+    //Methoden
+    public void initializeComponent(){
         setOpaque(false);
         setLayout(new BorderLayout());
         JPanel list = new JPanel(new GridLayout(2,1));
@@ -29,12 +45,13 @@ public class ItemIOField<U extends UnitEnumInterface> extends JComponent {
         list.add(nameDisplay);
         if (IS_INPUT) {
             JSpinner numSpin = new JSpinner(numberModel);
+            numSpin.addChangeListener(inputListener);
+            numSpin.addChangeListener(e -> updateNum());
             list.add(numSpin);
         }   else {
-            JTextField numDisplay = new JTextField(""+num);
+            numDisplay = new JTextField(""+num);
             numDisplay.setEditable(false);
             list.add(numDisplay);
-
         }
         add(list,BorderLayout.CENTER);
         iconDisplay = new ItemDisplay<>(UNIT,true);
@@ -42,14 +59,16 @@ public class ItemIOField<U extends UnitEnumInterface> extends JComponent {
         add(iconDisplay,BorderLayout.WEST);
     }
 
-    //Methoden
     public void resetNum(){
         num = 0;
+        updateDisplay();
     }
 
-    public void updateNum(){
+    private void updateNum(){
         num = numberModel.getNumber().intValue();
     }
+
+    private void updateDisplay(){numDisplay.setText(""+num);}
 
     //Getter
     public boolean isInput() {
@@ -67,6 +86,14 @@ public class ItemIOField<U extends UnitEnumInterface> extends JComponent {
     //Setter
     public void setNum(int num) {
         this.num = num;
+        updateDisplay();
+    }
+
+    /**
+     * Die Benutzung der Methode "setNum(int num)" sollte bevorzugt werden.
+     * */
+    public void forceDisplayMessage(String text){
+        numDisplay.setText(text);
     }
 
     public void setItemDisplayEnabled(boolean enabled){

@@ -72,7 +72,6 @@ public class Stackomat{
 
     //Methoden
     public void calcOutput(){
-        clearOutput();
         //Berechne Slotwerte
         outputFullSlotNum = inputItemNum / selectedItemUnit.getAmount();
         inputContainer.forEach((containerUnitEnum, integer) -> outputFullSlotNum += integer*containerUnitEnum.getAmount());
@@ -157,7 +156,11 @@ public class Stackomat{
         return inputItemNum;
     }
 
-    public int getOutputFullSlotNum() {
+    public int getTotalItemAmount(){
+        return overflowNum+(outputFullSlotNum*selectedItemUnit.getAmount());
+    }
+
+    public int getFullSlotNum() {
         return outputFullSlotNum;
     }
 

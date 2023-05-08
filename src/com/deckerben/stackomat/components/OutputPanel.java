@@ -9,6 +9,8 @@ import javax.swing.*;
 import java.awt.*;
 
 public class OutputPanel extends JPanel {
+    private final ItemIOField<ItemUnitEnum> totalItemsOutput;
+    private final ItemIOField<ContainerUnitEnum> stackOutput;
 
     //Felder
 
@@ -24,15 +26,17 @@ public class OutputPanel extends JPanel {
             }
         };
         border.setBorderTexType(McComponentTextureEnum.PANEL_DARK);
-        setBorder(border);
-        setBackground(ExpandableTexture.getCenterColor(border.getBorderTexType()));
+        //setBorder(border);
+        //setBackground(ExpandableTexture.getCenterColor(border.getBorderTexType()));
         setLayout(new BorderLayout());
         JLabel label = new JLabel("Ausgabe");
         add(label,BorderLayout.NORTH);
         JPanel list = new JPanel(new GridLayout(2,1));
         list.setOpaque(false);
-        list.add(new ItemIOField<>(false, ItemUnitEnum.FULL_STACK));
-        list.add(new ItemIOField<>(false, ContainerUnitEnum.SLOTS));
+        totalItemsOutput = new ItemIOField<>(ItemUnitEnum.FULL_STACK);
+        stackOutput = new ItemIOField<>(ContainerUnitEnum.SLOTS);
+        list.add(totalItemsOutput);
+        list.add(stackOutput);
         add(list,BorderLayout.CENTER);
     }
 
@@ -41,19 +45,18 @@ public class OutputPanel extends JPanel {
     //Getter
 
     //Setter
+    public void setTotalItems(int totalItems){
+        totalItemsOutput.setNum(totalItems);
+    }
+
+    public void setStacks(int stackCount, int overflow){
+        stackOutput.forceDisplayMessage(stackCount+" + "+overflow);
+    }
 
     //Maker
 
     //Overrides aus
-    ////JComponent
-    /*
-    @Override
-    public void paint(Graphics g) {
-        g.setColor(Color.RED);
-        Dimension size = getSize();
-        g.fillRect(0,0, size.width, size.height);
-    }
-    */
+    ////<Klassenname>
 
     //Interne Klassen
     ////Klasse "<Klassenname>"
