@@ -1,7 +1,7 @@
 package com.deckerben.minecraft.laf.ui;
 
-import com.deckerben.minecraft.laf.DrawSettings;
-import com.deckerben.minecraft.laf.ExpandableTexture;
+import com.deckerben.minecraft.laf.BorderDrawSettings;
+import com.deckerben.minecraft.laf.ExpandableBorder;
 import com.deckerben.minecraft.laf.textures.McComponentTextureEnum;
 
 import javax.swing.*;
@@ -38,8 +38,8 @@ public class McSpinnerUI extends BasicSpinnerUI {
     public void update(Graphics g, JComponent c) {
         Rectangle editorSize = new Rectangle(((JSpinner)c).getEditor().getSize());
         Rectangle arrowSize = new Rectangle(c.getSize().width - ((JSpinner)c).getEditor().getSize().width,c.getSize().height - ((JSpinner)c).getEditor().getSize().height);
-        ExpandableTexture.paintTexture(g,editorSize, McComponentTextureEnum.TEXTFIELD, DrawSettings.FORCE_PAINTING);
-        ExpandableTexture.paintTexture(g,arrowSize,McComponentTextureEnum.BUTTON, DrawSettings.FORCE_PAINTING);
+        ExpandableBorder.paintTexture(g,editorSize, McComponentTextureEnum.TEXTFIELD, BorderDrawSettings.FORCE_PAINTING);
+        ExpandableBorder.paintTexture(g,arrowSize,McComponentTextureEnum.BUTTON, BorderDrawSettings.FORCE_PAINTING);
         super.update(g, c);
     }
 

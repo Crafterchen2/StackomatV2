@@ -1,13 +1,15 @@
 package com.deckerben.stackomat.components;
 
+import com.deckerben.minecraft.laf.DrawSettings;
+import com.deckerben.minecraft.laf.ExpandableBorder;
 import com.deckerben.minecraft.laf.ExpandableTexture;
 import com.deckerben.minecraft.laf.textures.McComponentTextureEnum;
-import com.deckerben.stackomat.ItemUnitEnum;
 import com.deckerben.stackomat.UnitEnumInterface;
 
 import javax.swing.*;
 import java.awt.*;
 import java.awt.image.BufferedImage;
+import java.util.function.Consumer;
 
 public class ItemDisplay<U extends UnitEnumInterface> extends JComponent {
 
@@ -17,13 +19,7 @@ public class ItemDisplay<U extends UnitEnumInterface> extends JComponent {
 
     private boolean isSquare = true;
 
-    private final ExpandableTexture border = new ExpandableTexture(true) {
-        @Override
-        protected boolean globalScaleUpdated() {
-            updateUI();
-            return true;
-        }
-    };
+    private final ExpandableTexture texture = new ExpandableTexture(McComponentTextureEnum.ICON, integer -> updateUI());
 
     //Listener
 
@@ -35,8 +31,6 @@ public class ItemDisplay<U extends UnitEnumInterface> extends JComponent {
     public ItemDisplay(U unit, boolean isSquare) {
         setUnit(unit);
         setSquare(isSquare);
-        border.setBorderTexType(McComponentTextureEnum.ICON);
-        setBorder(border);
     }
 
     //Methoden
@@ -52,6 +46,10 @@ public class ItemDisplay<U extends UnitEnumInterface> extends JComponent {
 
     public boolean isSquare() {
         return isSquare;
+    }
+
+    public void toggleEnabled(){
+        setEnabled(!isEnabled());
     }
 
     //Setter
@@ -71,18 +69,17 @@ public class ItemDisplay<U extends UnitEnumInterface> extends JComponent {
     @Override
     protected void paintComponent(Graphics g) {
         Rectangle bounds = getBounds();
-        Rectangle innerRect = new Rectangle(border.getInteriorRectangle(this,bounds.x, bounds.y, bounds.width, bounds.height));
-        g.setColor(ExpandableTexture.getCenterColor(McComponentTextureEnum.ICON));
-        g.fillRect(innerRect.x, innerRect.y, innerRect.width, innerRect.height);
+        Rectangle innerRect = texture.getInnerRectangle(bounds.getSize());
+        texture.paintTexture(g, new Rectangle(bounds.getSize()),Color.BLACK, DrawSettings.HOLES_TRANSPARENT);
         g.drawImage(icon,innerRect.x, innerRect.y, innerRect.width, innerRect.height,null);
     }
 
     @Override
     public void setEnabled(boolean enabled) {
         if (enabled) {
-            border.setBorderTexType(McComponentTextureEnum.ICON);
+            texture.setTexType(McComponentTextureEnum.ICON);
         } else {
-            border.setBorderTexType(McComponentTextureEnum.ICON_DISABLED);
+            texture.setTexType(McComponentTextureEnum.ICON_DISABLED);
         }
         updateUI();
         super.setEnabled(enabled);

@@ -7,8 +7,6 @@ import javax.swing.plaf.basic.BasicInternalFrameTitlePane;
 import java.awt.*;
 import java.util.ArrayList;
 
-import static com.deckerben.minecraft.laf.ExpandableTexture.getGlobalScale;
-
 public class McInternalFrameTitlePane extends BasicInternalFrameTitlePane implements MCTitlePaneInterface{
 
     //Felder

@@ -3,79 +3,67 @@ package com.deckerben.minecraft.laf;
 import com.deckerben.minecraft.laf.textures.McComponentTextureEnum;
 
 import javax.imageio.ImageIO;
-import javax.swing.border.AbstractBorder;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Objects;
+import java.util.function.Consumer;
 
-public abstract class ExpandableTexture extends AbstractBorder {
+public class ExpandableTexture {
 
     //Felder
-    private static int globalScale = 3;
-    private static final HashSet<ExpandableTexture> updateWatchList = new HashSet<>();
-
-    private McComponentTextureEnum borderTexType = McComponentTextureEnum.PANEL_THIN;
-    private Color borderBackgroundColor = null;
-
     private static final String TEXTURE_PATH = "/com/deckerben/minecraft/laf/textures/assets/components.png";
-    private static final BufferedImage TEXTURE = loadTextureFile();
+    private static final BufferedImage TEXTURE_FILE = loadTextureFile();
+
+    private BufferedImage unscaledTexture;
+
+    private McComponentTextureEnum texType;
+
+    private final HashMap<SectorEnum, BufferedImage> unscaledSectors = SectorEnum.makeEmptyMap();
+    private final HashMap<SectorEnum, BufferedImage> scaledSectors = SectorEnum.makeEmptyMap();
+
+    private static int globalScale = 3;
+    private int usedScale = -1;
+
+    private static final ArrayList<ExpandableTexture> watchList = new ArrayList<>();
+    private final Consumer<Integer> alertAction;
 
     //Listener
 
     //Konstruktoren
-    public ExpandableTexture(boolean addToWatchList){
-        if (addToWatchList) updateWatchList.add(this);
+    public ExpandableTexture(McComponentTextureEnum texType){
+        this(texType,null);
+    }
+
+    public ExpandableTexture(McComponentTextureEnum texType, int customScale){
+        this(texType,null, customScale);
+    }
+
+    public ExpandableTexture(McComponentTextureEnum texType, Consumer<Integer> alertAction){
+        setTexType(texType);
+        this.alertAction = alertAction;
+        if (this.alertAction != null) watchList.add(this);
+    }
+
+    public ExpandableTexture(McComponentTextureEnum texType, Consumer<Integer> alertAction, int customScale){
+        checkScale(customScale);
+        usedScale = customScale;
+        setTexType(texType);
+        this.alertAction = alertAction;
+        if (this.alertAction != null) watchList.add(this);
     }
 
     //Methoden
-    public static void paintTexture(Graphics g, Rectangle size, McComponentTextureEnum texType){
-        paintTexture(g,size,texType,DrawSettings.NOT_SET);
-    }
-
-    public static void paintTexture(Graphics g, Rectangle size, McComponentTextureEnum texType, int scale){
-        paintTexture(g,size,texType,scale,DrawSettings.NOT_SET);
-    }
-
-    public static void paintTexture(Graphics g, Rectangle size, McComponentTextureEnum texType, int scale, int fillingWidth){
-        paintTexture(g,size,texType,scale,fillingWidth,DrawSettings.NOT_SET);
-    }
-
-    public static void paintTexture(Graphics g, Rectangle size, McComponentTextureEnum texType, Color background){
-        paintTexture(g,size,texType,background,DrawSettings.NOT_SET);
-    }
-
-    public static void paintTexture(Graphics g, Rectangle size, McComponentTextureEnum texType, DrawSettings... modifier){
-        paintTexture(g,size,texType,globalScale,modifier);
-    }
-
-    public static void paintTexture(Graphics g, Rectangle size, McComponentTextureEnum texType, int scale, DrawSettings... modifier){
-        paintTexture(g,size,texType,scale,1,modifier);
-    }
-
-    public static void paintTexture(Graphics g, Rectangle size, McComponentTextureEnum texType, int scale, int fillingWidth, DrawSettings... modifier){
-        paintTexture(g,size,texType,scale,fillingWidth,new Color(0,0,0,0),modifier);
-    }
-
-    public static void paintTexture(Graphics g, Rectangle size, McComponentTextureEnum texType, Color background, DrawSettings... modifier){
-        paintTexture(g,size,texType,globalScale,background,modifier);
-    }
-
-    public static void paintTexture(Graphics g, Rectangle size, McComponentTextureEnum texType, int scale, Color background, DrawSettings... modifier){
-        paintTexture(g,size,texType,scale,1,background,modifier);
-    }
-
-    public static void paintTexture(Graphics g, Rectangle size, McComponentTextureEnum texType, int scale, int fillWidth, Color background, DrawSettings... modifier){
-        int fillingWidth = (texType.hasFilling())? fillWidth : 0;
-        if (scale <= 0) throw new IllegalArgumentException("\"scale\" '"+scale+"' must be bigger or equal to 1.");
-        if (fillingWidth < 0) throw new IllegalArgumentException("\"fillingWidth\" '"+fillingWidth+"' must be bigger or equal to 0.");
+    public void paintTexture(Graphics g, Rectangle cords, Color background, DrawSettings... modifier){
         DrawSettings justSetting = DrawSettings.NOT_SET;
         DrawSettings holeSetting = DrawSettings.NOT_SET;
         HashSet<DrawSettings> otherSettings = new HashSet<>();
         for (DrawSettings setting: modifier) {
-            switch (setting.getId()){
-                case DrawSettings.JUST_ID -> {
+            switch (setting.ID) {
+                case DrawSettings.JUST_SPECIFIC_CORNER_ID, DrawSettings.JUST_SPECIFIC_EDGE_ID, DrawSettings.JUST_ID -> {
                     if (justSetting == DrawSettings.NOT_SET) justSetting = setting;
                 }
                 case DrawSettings.HOLES_ID -> {
@@ -86,229 +74,200 @@ public abstract class ExpandableTexture extends AbstractBorder {
         }
         //JUST-modifier in NO-modifier übersetzen
         switch (justSetting) {
-            case JUST_OUTER -> {otherSettings.add(DrawSettings.NO_INNER);otherSettings.add(DrawSettings.NO_CENTER);otherSettings.add(DrawSettings.NO_FILLING);}
-            case JUST_INNER -> {otherSettings.add(DrawSettings.NO_OUTER);otherSettings.add(DrawSettings.NO_CENTER);otherSettings.add(DrawSettings.NO_FILLING);}
-            case JUST_CENTER -> {otherSettings.add(DrawSettings.NO_INNER);otherSettings.add(DrawSettings.NO_OUTER);otherSettings.add(DrawSettings.NO_FILLING);}
-            case JUST_FILLING -> {otherSettings.add(DrawSettings.NO_INNER);otherSettings.add(DrawSettings.NO_OUTER);otherSettings.add(DrawSettings.NO_CENTER);}
+            case JUST_OUTER -> otherSettings.add(DrawSettings.NO_CENTER);
+            case JUST_CENTER -> otherSettings.add(DrawSettings.NO_OUTER);
+            case JUST_CORNERS -> {otherSettings.add(DrawSettings.NO_EDGES);otherSettings.add(DrawSettings.NO_CENTER);}
+            case JUST_EDGES -> {otherSettings.add(DrawSettings.NO_CORNERS);otherSettings.add(DrawSettings.NO_CENTER);}
+            case JUST_NW -> {otherSettings.add(DrawSettings.NO_EDGES); otherSettings.add(DrawSettings.NO_SW); otherSettings.add(DrawSettings.NO_ES); otherSettings.add(DrawSettings.NO_NE);otherSettings.add(DrawSettings.NO_CENTER);}
+            case JUST_NE -> {otherSettings.add(DrawSettings.NO_EDGES); otherSettings.add(DrawSettings.NO_NW); otherSettings.add(DrawSettings.NO_SW); otherSettings.add(DrawSettings.NO_ES);otherSettings.add(DrawSettings.NO_CENTER);}
+            case JUST_ES -> {otherSettings.add(DrawSettings.NO_EDGES); otherSettings.add(DrawSettings.NO_NE); otherSettings.add(DrawSettings.NO_NW); otherSettings.add(DrawSettings.NO_SW);otherSettings.add(DrawSettings.NO_CENTER);}
+            case JUST_SW -> {otherSettings.add(DrawSettings.NO_EDGES); otherSettings.add(DrawSettings.NO_ES); otherSettings.add(DrawSettings.NO_NE); otherSettings.add(DrawSettings.NO_NW);otherSettings.add(DrawSettings.NO_CENTER);}
+            case JUST_N ->  {otherSettings.add(DrawSettings.NO_CORNERS); otherSettings.add(DrawSettings.NO_E); otherSettings.add(DrawSettings.NO_S); otherSettings.add(DrawSettings.NO_W);otherSettings.add(DrawSettings.NO_CENTER);}
+            case JUST_E ->  {otherSettings.add(DrawSettings.NO_CORNERS); otherSettings.add(DrawSettings.NO_S); otherSettings.add(DrawSettings.NO_W); otherSettings.add(DrawSettings.NO_N);otherSettings.add(DrawSettings.NO_CENTER);}
+            case JUST_S ->  {otherSettings.add(DrawSettings.NO_CORNERS); otherSettings.add(DrawSettings.NO_W); otherSettings.add(DrawSettings.NO_N); otherSettings.add(DrawSettings.NO_E);otherSettings.add(DrawSettings.NO_CENTER);}
+            case JUST_W ->  {otherSettings.add(DrawSettings.NO_CORNERS); otherSettings.add(DrawSettings.NO_N); otherSettings.add(DrawSettings.NO_E); otherSettings.add(DrawSettings.NO_S);otherSettings.add(DrawSettings.NO_CENTER);}
         }
-        if (calcCurrentScaleFactor(scale,size.width-(((fillingWidth-1)*2)*scale),size.height-(((fillingWidth-1)*2)*scale)) > texType.getMaxScaleFactor() && !otherSettings.contains(DrawSettings.FORCE_PAINTING)){
-            throw new IllegalArgumentException("New scaleFactor '"+calcCurrentScaleFactor(scale,size.width-(((fillingWidth-1)*2)*scale),size.height-(((fillingWidth-1)*2)*scale))+"' is bigger than '"+texType.getMaxScaleFactor()+"', causing visual oddities. Add \"DrawSettings.FORCE_PAINTING\" to modification list to suppress this error.");
+        //modifier in spezifische Modifier übersetzen
+        if (otherSettings.contains(DrawSettings.NO_OUTER)){otherSettings.add(DrawSettings.NO_CORNERS); otherSettings.add(DrawSettings.NO_EDGES);}
+        if (otherSettings.contains(DrawSettings.NO_CORNERS)){otherSettings.add(DrawSettings.NO_NW); otherSettings.add(DrawSettings.NO_NE); otherSettings.add(DrawSettings.NO_ES); otherSettings.add(DrawSettings.NO_SW);}
+        if (otherSettings.contains(DrawSettings.NO_EDGES)){otherSettings.add(DrawSettings.NO_N); otherSettings.add(DrawSettings.NO_E); otherSettings.add(DrawSettings.NO_S); otherSettings.add(DrawSettings.NO_W);}
+        //Größe des Bilds berechnen
+        Dimension imgSize = new Dimension(cords.getSize());
+        if ((imgSize.width <= 0) && (imgSize.height <= 0)) return;
+        //Malen vorbereiten
+        g.setClip(cords);
+        //Hintergrund malen
+        if (holeSetting != DrawSettings.HOLES_TRANSPARENT) {
+            if (holeSetting == DrawSettings.HOLES_CENTER) {
+                g.setColor(new Color(scaledSectors.get(SectorEnum.C).getRGB(0,0)));
+            } else {
+                g.setColor(background);
+            }
+            g.fillRect(0,0, imgSize.width, imgSize.height);
         }
-        Graphics2D g2d = (Graphics2D) g;
-        BufferedImage unscaledTexture = readTexture(texType);
+        //Umrandung malen
+        for (DrawSettings setting : DrawSettings.getNoValues()) {
+            if (!otherSettings.contains(setting)) drawSector(g,setting.getMatchingSector(),imgSize);
+        }
+        if (!otherSettings.contains(DrawSettings.NO_CENTER)) drawSector(g,SectorEnum.C,imgSize);
+    }
+
+    private void drawSector(Graphics g, SectorEnum sector, Dimension maxSize){
+        if (sector == null) return;
+        switch (sector) {
+            case NW -> drawSector(g,sector,0,0);
+            case NE -> drawSector(g,sector,maxSize.width-scaledSectors.get(sector).getWidth(),0);
+            case ES -> drawSector(g,sector,maxSize.width-scaledSectors.get(sector).getWidth(),maxSize.height-scaledSectors.get(sector).getHeight());
+            case SW -> drawSector(g,sector,0,maxSize.height-scaledSectors.get(sector).getHeight());
+            case N ->  drawSector(g,sector,scaledSectors.get(SectorEnum.NW).getWidth(),0, maxSize.width-scaledSectors.get(SectorEnum.NW).getWidth()-scaledSectors.get(SectorEnum.NE).getWidth(), scaledSectors.get(SectorEnum.NW).getHeight());
+            case E ->  drawSector(g,sector,maxSize.width-scaledSectors.get(SectorEnum.NE).getWidth(),scaledSectors.get(SectorEnum.NE).getHeight(), scaledSectors.get(SectorEnum.NE).getWidth(), maxSize.height-scaledSectors.get(SectorEnum.NE).getHeight()-scaledSectors.get(SectorEnum.ES).getHeight());
+            case S ->  drawSector(g,sector,scaledSectors.get(SectorEnum.SW).getWidth(),maxSize.height-scaledSectors.get(SectorEnum.SW).getHeight(), maxSize.width-scaledSectors.get(SectorEnum.SW).getWidth()-scaledSectors.get(SectorEnum.NE).getWidth(), scaledSectors.get(SectorEnum.SW).getHeight());
+            case W ->  drawSector(g,sector,0,scaledSectors.get(SectorEnum.NW).getHeight(), scaledSectors.get(SectorEnum.NW).getWidth(), maxSize.height-scaledSectors.get(SectorEnum.NE).getHeight()-scaledSectors.get(SectorEnum.ES).getHeight());
+            case C ->  drawSector(g,sector,scaledSectors.get(SectorEnum.NW).getWidth(),scaledSectors.get(SectorEnum.NW).getHeight(),maxSize.width-scaledSectors.get(SectorEnum.NW).getWidth()-scaledSectors.get(SectorEnum.NE).getWidth(),maxSize.height-scaledSectors.get(SectorEnum.NE).getHeight()-scaledSectors.get(SectorEnum.ES).getHeight());
+        }
+    }
+
+    private void drawSector(Graphics g, SectorEnum sector, int x, int y){
+        drawSector(g,sector,x,y,scaledSectors.get(sector).getWidth(),scaledSectors.get(sector).getHeight());
+    }
+
+    private void drawSector(Graphics g, SectorEnum sector, int x, int y, int width, int height){
+        g.drawImage(scaledSectors.get(sector),x,y,width,height,null);
+    }
+
+    private void scaleSectors(int scale){
+        scaledSectors.forEach((sectorEnum, bufferedImage) -> {
+            switch (sectorEnum.TYPE){
+                case SectorEnum.CENTER -> scaledSectors.replace(sectorEnum, unscaledSectors.get(sectorEnum));
+                case SectorEnum.CORNER -> scaledSectors.replace(sectorEnum, scaleTexture(unscaledSectors.get(sectorEnum), scale, scale));
+                case SectorEnum.VERTICAL_EDGE -> scaledSectors.replace(sectorEnum, scaleTexture(unscaledSectors.get(sectorEnum), 1, scale));
+                case SectorEnum.HORIZONTAL_EDGE -> scaledSectors.replace(sectorEnum, scaleTexture(unscaledSectors.get(sectorEnum), scale, 1));
+            }
+        });
+    }
+
+    private BufferedImage scaleTexture(BufferedImage tex, int widthScale, int heightScale){
+        BufferedImage rv = new BufferedImage(tex.getWidth()*widthScale,tex.getHeight()*heightScale,BufferedImage.TYPE_INT_ARGB);
+        Graphics g = rv.getGraphics();
+        g.drawImage(tex,0,0,rv.getWidth(), rv.getHeight(), null);
+        g.dispose();
+        return rv;
+    }
+
+    private void splitTexture(){
+        //corners
+        unscaledSectors.replace(SectorEnum.NW, unscaledTexture.getSubimage(0,0, unscaledTexture.getWidth()/2, unscaledTexture.getHeight()/2));
+        unscaledSectors.replace(SectorEnum.NE, unscaledTexture.getSubimage(unscaledTexture.getWidth()-(unscaledTexture.getWidth()/2),0, unscaledTexture.getWidth()/2, unscaledTexture.getHeight()/2));
+        unscaledSectors.replace(SectorEnum.ES, unscaledTexture.getSubimage(unscaledTexture.getWidth()-(unscaledTexture.getWidth()/2), unscaledTexture.getHeight()-(unscaledTexture.getHeight()/2), unscaledTexture.getWidth()/2, unscaledTexture.getHeight()/2));
+        unscaledSectors.replace(SectorEnum.SW, unscaledTexture.getSubimage(0, unscaledTexture.getHeight()-(unscaledTexture.getHeight()/2), unscaledTexture.getWidth()/2, unscaledTexture.getHeight()/2));
+        //edges
+        unscaledSectors.replace(SectorEnum.N, unscaledTexture.getSubimage(unscaledTexture.getWidth()/2,0,1, unscaledTexture.getHeight()/2));
+        unscaledSectors.replace(SectorEnum.E, unscaledTexture.getSubimage(unscaledTexture.getWidth()-(unscaledTexture.getWidth()/2), unscaledTexture.getHeight()/2, unscaledTexture.getWidth()/2,1));
+        unscaledSectors.replace(SectorEnum.S, unscaledTexture.getSubimage(unscaledTexture.getWidth()/2, unscaledTexture.getHeight()-(unscaledTexture.getHeight()/2),1, unscaledTexture.getHeight()/2));
+        unscaledSectors.replace(SectorEnum.W, unscaledTexture.getSubimage(0, unscaledTexture.getHeight()/2, unscaledTexture.getWidth()/2,1));
+        //center
+        unscaledSectors.replace(SectorEnum.C, unscaledTexture.getSubimage(unscaledTexture.getWidth()/2, unscaledTexture.getHeight()/2,1,1));
+    }
+
+    //public BufferedImage assembleTexture(boolean scaledVersion){
+    //    return (scaledVersion)?assembleScaledTexture():unscaledTexture;
+    //}
+    //
+    //private BufferedImage assembleScaledTexture(){
+    //
+    //}
+
+    public static BufferedImage readTexture(McComponentTextureEnum texType){
         Rectangle texCoords = texType.getTexCoords();
-        BufferedImage texture = scaleTexture(unscaledTexture, scale);
-        Color backgroundColor = switch (holeSetting) {
-            case HOLES_CENTER -> getCenterColor(unscaledTexture);
-            case HOLES_TRANSPARENT -> new Color(0,0,0,0);
-            default -> background;
-        };
-        if (texType.isComplex()){
-            Rectangle innerCoords = texType.getInnerCoords();
-            Color fillColor = (texType.hasFilling()) ? new Color(unscaledTexture.getRGB(innerCoords.x -1,innerCoords.y -1)) : backgroundColor;
-            if (holeSetting == DrawSettings.HOLES_FILLING) backgroundColor = fillColor;
-            BufferedImage outerTexture = new BufferedImage(texCoords.width-innerCoords.width-1,texCoords.height-innerCoords.height-1,BufferedImage.TYPE_INT_ARGB);
-            Graphics outerG = outerTexture.getGraphics();
-            outerG.drawImage(unscaledTexture.getSubimage(0,0,(texCoords.width-innerCoords.width-2) /2,(texCoords.height-innerCoords.height-2) /2),0,0,(texCoords.width-innerCoords.width-2) /2,(texCoords.height-innerCoords.height-2) /2,null);
-            outerG.drawImage(unscaledTexture.getSubimage(texCoords.width - ((texCoords.width-innerCoords.width-2) /2),0,(texCoords.width-innerCoords.width-2) /2,(texCoords.height-innerCoords.height-2) /2),outerTexture.getWidth() - (outerTexture.getWidth() /2),0,(texCoords.width-innerCoords.width-2) /2,(texCoords.height-innerCoords.height-2) /2,null);
-            outerG.drawImage(unscaledTexture.getSubimage(texCoords.width - ((texCoords.width-innerCoords.width-2) /2),texCoords.height - ((texCoords.height-innerCoords.height-2) /2),(texCoords.width-innerCoords.width-2) /2,(texCoords.height-innerCoords.height-2) /2),outerTexture.getWidth() - (outerTexture.getWidth() /2),outerTexture.getHeight() - (outerTexture.getHeight() /2),(texCoords.width-innerCoords.width-2) /2,(texCoords.height-innerCoords.height-2) /2,null);
-            outerG.drawImage(unscaledTexture.getSubimage(0,texCoords.height - ((texCoords.height-innerCoords.height-2) /2),(texCoords.width-innerCoords.width-2) /2,(texCoords.height-innerCoords.height-2) /2),0,outerTexture.getHeight() - (outerTexture.getHeight() /2),(texCoords.width-innerCoords.width-2) /2,(texCoords.height-innerCoords.height-2) /2,null);
-            outerG.drawImage(unscaledTexture.getSubimage(texCoords.width/2,0,1,(texCoords.height-innerCoords.height-2) /2),outerTexture.getWidth()/2,0,1,(texCoords.height-innerCoords.height-2) /2,null);
-            outerG.drawImage(unscaledTexture.getSubimage(texCoords.width - ((texCoords.width-innerCoords.width-2) /2),texCoords.height/2,(texCoords.width-innerCoords.width-2) /2,1),outerTexture.getWidth() - ((texCoords.width-innerCoords.width-2) /2),outerTexture.getHeight()/2,(texCoords.width-innerCoords.width-2) /2,1,null);
-            outerG.drawImage(unscaledTexture.getSubimage(texCoords.width - ((texCoords.width-innerCoords.width-2) /2) -1,texCoords.height - ((texCoords.height-innerCoords.height-2) /2),1,(texCoords.height-innerCoords.height-2) /2),outerTexture.getWidth() - (outerTexture.getWidth() /2) -1,outerTexture.getHeight() - (outerTexture.getHeight() /2),1,(texCoords.height-innerCoords.height-2) /2,null);
-            outerG.drawImage(unscaledTexture.getSubimage(0,texCoords.height/2,(texCoords.width-innerCoords.width-2) /2,1),0,outerTexture.getHeight()/2,(texCoords.width-innerCoords.width-2) /2,1,null);
-            outerG.setColor(fillColor);
-            outerG.fillRect(outerTexture.getWidth() /2,outerTexture.getHeight() /2,1,1);
-            outerG.dispose();
-            drawTexture(g2d, scaleTexture(outerTexture, scale), backgroundColor, size, !otherSettings.contains(DrawSettings.NO_OUTER), !otherSettings.contains(DrawSettings.NO_FILLING));
-            BufferedImage innerTexture = scaleTexture(unscaledTexture.getSubimage(innerCoords.x,innerCoords.y,innerCoords.width,innerCoords.height),scale);
-            drawTexture(g2d, innerTexture, backgroundColor, new Rectangle(size.x + ((innerCoords.x + fillingWidth-1) * scale), size.y + ((innerCoords.y + fillingWidth-1) * scale), size.width - (((innerCoords.x + fillingWidth-1) * scale)*2), size.height - (((innerCoords.y + fillingWidth-1) * scale)*2)), !otherSettings.contains(DrawSettings.NO_INNER), !otherSettings.contains(DrawSettings.NO_CENTER));
-        }   else {
-            drawTexture(g2d, texture, backgroundColor, size,!otherSettings.contains(DrawSettings.NO_OUTER),!otherSettings.contains(DrawSettings.NO_CENTER));
-        }
-    }
-
-    public static BufferedImage scaleTexture(BufferedImage unscaledTexture, int scale){
-        BufferedImage texture = new BufferedImage(1+((unscaledTexture.getWidth()/2)*2)*scale,1+((unscaledTexture.getHeight()/2)*2)*scale,BufferedImage.TYPE_INT_ARGB);
-        Graphics gTex = texture.getGraphics();
-        gTex.drawImage(unscaledTexture.getSubimage(0,0,unscaledTexture.getWidth()/2,unscaledTexture.getHeight()/2),0,0,texture.getWidth()/2,texture.getHeight()/2,null);
-        gTex.drawImage(unscaledTexture.getSubimage(unscaledTexture.getWidth()-unscaledTexture.getWidth()/2,0,unscaledTexture.getWidth()/2,unscaledTexture.getHeight()/2),texture.getWidth()-texture.getWidth()/2,0,texture.getWidth()/2,texture.getHeight()/2,null);
-        gTex.drawImage(unscaledTexture.getSubimage(unscaledTexture.getWidth()-unscaledTexture.getWidth()/2,unscaledTexture.getHeight()-unscaledTexture.getHeight()/2,unscaledTexture.getWidth()/2,unscaledTexture.getHeight()/2),texture.getWidth()-texture.getWidth()/2,texture.getHeight()-texture.getHeight()/2,texture.getWidth()/2,texture.getHeight()/2,null);
-        gTex.drawImage(unscaledTexture.getSubimage(0,unscaledTexture.getHeight()-unscaledTexture.getHeight()/2,unscaledTexture.getWidth()/2,unscaledTexture.getHeight()/2),0,texture.getHeight()-texture.getHeight()/2,texture.getWidth()/2,texture.getHeight()/2,null);
-        gTex.drawImage(unscaledTexture.getSubimage(unscaledTexture.getWidth()/2,0,1,unscaledTexture.getHeight()/2),texture.getWidth()/2,0,1,texture.getHeight()/2,null);
-        gTex.drawImage(unscaledTexture.getSubimage(0,unscaledTexture.getHeight()/2,unscaledTexture.getWidth()/2,1),0,texture.getHeight()/2,texture.getWidth()/2,1,null);
-        gTex.drawImage(unscaledTexture.getSubimage(1+unscaledTexture.getWidth()/2,unscaledTexture.getHeight()/2,unscaledTexture.getWidth()/2,1),1+texture.getWidth()/2,texture.getHeight()/2,texture.getWidth()/2,1,null);
-        gTex.drawImage(unscaledTexture.getSubimage(unscaledTexture.getWidth()/2,1+unscaledTexture.getHeight()/2,1,unscaledTexture.getHeight()/2),texture.getWidth()/2,1+texture.getHeight()/2,1,texture.getHeight()/2,null);
-        gTex.drawImage(unscaledTexture.getSubimage(unscaledTexture.getWidth()/2,unscaledTexture.getHeight()/2,1,1),texture.getWidth()/2,texture.getHeight()/2,1,1,null);
-        gTex.dispose();
-        return texture;
-    }
-
-    private static void drawTexture(Graphics2D g2d, BufferedImage texture, Color fillColor, Rectangle size, boolean drawBorder, boolean drawCenter){
-        g2d.setClip(size);
-        g2d.setColor(fillColor);
-        g2d.fillRect(size.x,size.y,size.width,size.height);
-        if (drawCenter) {
-            Color center = new Color(texture.getRGB(texture.getWidth() / 2, texture.getHeight() / 2));
-            g2d.setColor(center);
-            g2d.fillRect(size.x +texture.getWidth()/2,size.y + texture.getHeight()/2, size.width - texture.getWidth() + (texture.getWidth()-((texture.getWidth()/2)*2)), size.height - texture.getHeight() + (texture.getHeight()-((texture.getHeight()/2)*2)));
-        }
-        if (drawBorder) {
-            BufferedImage[] corners = new BufferedImage[4];
-            TexturePaint[] sides = new TexturePaint[4];
-            corners[0] = texture.getSubimage(0,0,texture.getWidth()/2,texture.getHeight()/2);
-            corners[1] = texture.getSubimage(texture.getWidth() - texture.getWidth()/2,0,texture.getWidth()/2,texture.getHeight()/2);
-            corners[2] = texture.getSubimage(0,texture.getHeight() - texture.getHeight()/2,texture.getWidth()/2,texture.getHeight()/2);
-            corners[3] = texture.getSubimage(texture.getWidth() - texture.getWidth()/2,texture.getHeight() - texture.getHeight()/2,texture.getWidth()/2,texture.getHeight()/2);
-            sides[0] = new TexturePaint(texture.getSubimage(texture.getWidth()/2,0,1,texture.getHeight()/2),new Rectangle(0,size.y,1,texture.getHeight()/2));
-            sides[1] = new TexturePaint(texture.getSubimage(texture.getWidth() - texture.getWidth()/2,texture.getHeight()/2,texture.getWidth()/2,1),new Rectangle(size.x + size.width % (texture.getWidth()/2),0,texture.getWidth()/2,1));
-            sides[2] = new TexturePaint(texture.getSubimage(texture.getWidth()/2,texture.getHeight() - texture.getHeight()/2,1,texture.getHeight()/2),new Rectangle(0,size.y + size.height % (texture.getHeight()/2),1,texture.getHeight()/2));
-            sides[3] = new TexturePaint(texture.getSubimage(0,texture.getHeight()/2,texture.getWidth()/2,1),new Rectangle(size.x,0,texture.getWidth()/2,1));
-            g2d.drawImage(corners[0],size.x,size.y,new Color(0,0,0,0),null);
-            g2d.drawImage(corners[1],size.x + size.width - texture.getWidth()/2,size.y,new Color(0,0,0,0),null);
-            g2d.drawImage(corners[3],size.x + size.width - texture.getWidth()/2,size.y + size.height - texture.getHeight()/2,new Color(0,0,0,0),null);
-            g2d.drawImage(corners[2],size.x,size.y + size.height - texture.getHeight()/2,new Color(0,0,0,0),null);
-            g2d.setPaint(sides[0]);
-            g2d.fillRect(size.x + texture.getWidth()/2,size.y,size.width - texture.getWidth() + (texture.getWidth()-((texture.getWidth()/2)*2)),texture.getHeight()/2);
-            g2d.setPaint(sides[1]);
-            g2d.fillRect(size.x + size.width - texture.getWidth()/2,size.y + texture.getHeight()/2,texture.getWidth()/2,size.height - texture.getHeight() + (texture.getHeight()-((texture.getHeight()/2)*2)));
-            g2d.setPaint(sides[2]);
-            g2d.fillRect(size.x + texture.getWidth()/2, size.y + size.height - texture.getHeight()/2, size.width - texture.getWidth() + (texture.getWidth()-((texture.getWidth()/2)*2)),texture.getHeight()/2);
-            g2d.setPaint(sides[3]);
-            g2d.fillRect(size.x,size.y + texture.getHeight()/2,texture.getWidth()/2,size.height - texture.getHeight() + (texture.getHeight()-((texture.getHeight()/2)*2)));
-        }
-    }
-
-    public static double calcCurrentScaleFactor(int scale, int width, int height){
-        return (double)scale/(double)Math.min(width,height);
+        return TEXTURE_FILE.getSubimage(texCoords.x,texCoords.y,texCoords.width,texCoords.height);
     }
 
     private static BufferedImage loadTextureFile(){
         BufferedImage unscaledTexture;
         try {
-            unscaledTexture = ImageIO.read(Objects.requireNonNull(McUtils.class.getResourceAsStream(TEXTURE_PATH)));
+            unscaledTexture = ImageIO.read(Objects.requireNonNull(ExpandableTexture.class.getResourceAsStream(TEXTURE_PATH)));
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
         return unscaledTexture;
     }
 
-    public void addWatchList(){
-        updateWatchList.add(this);
-    }
-
-    public void removeFromWatchList(){
-        updateWatchList.remove(this);
-    }
-
-    public boolean isOnWatchList(){
-        return updateWatchList.contains(this);
-    }
-
-    /**
-     * Diese Methode gibt zurück, wie viele Fehler durch das Ändern der setGlobalScale()
-     * erzeugt wurden.
-     * */
-    public static int callUpdatesInWatchList(){
-        int updateErrors = 0;
-        for (ExpandableTexture expandableTexture : updateWatchList) {
-            if(!expandableTexture.globalScaleUpdated()) updateErrors++;
+    public void swapOutSectors(SectorEnum sector, BufferedImage newSector, boolean isAlreadyScaled){
+        if (isAlreadyScaled) {
+            checkSectorSize(scaledSectors.get(sector),newSector);
+            scaledSectors.replace(sector,newSector);
+        } else {
+            checkSectorSize(unscaledSectors.get(sector),newSector);
+            unscaledSectors.replace(sector,newSector);
+            scaleSectors(getUsedScale());
         }
-        return updateErrors;
     }
 
-    public static BufferedImage readTexture(McComponentTextureEnum texType){
-        Rectangle texCoords = texType.getTexCoords();
-        return TEXTURE.getSubimage(texCoords.x,texCoords.y,texCoords.width,texCoords.height);
+    //Checker
+    private static void checkScale(int scaleToCheck) throws IllegalArgumentException{
+        if (scaleToCheck < 1) throw new IllegalArgumentException("Scale "+scaleToCheck+" too small: Scale must be >= 1.");
     }
 
-    //Abstrakte Methoden
-    /**
-     * Diese Methode sollte bei den entsprechenden ExpandableTexture Instanzen implementiert
-     * werden und dafür sorgen, dass sich das Dargestellte an den neuen getGlobalScale()
-     * anpasst. Es wird "true" zurückgegeben, wenn der neue getGlobalScale() keine Fehler
-     * erzeugt hat und das Darzustellende korrekt gemalt werden konnte. Andernfalls soll
-     * "false" zurückgegeben werden.
-    **/
-    protected abstract boolean globalScaleUpdated();
+    private void checkSectorSize(BufferedImage ogImage, BufferedImage imageToCheck) throws IllegalArgumentException{
+        if ((ogImage.getHeight() == imageToCheck.getHeight())&&(ogImage.getWidth() == imageToCheck.getWidth())) {
+            throw new IllegalArgumentException("New image does not fit size "+ogImage.getWidth()+"X"+ogImage.getHeight()+".");
+        }
+    }
 
     //Getter
+    public BufferedImage getUnscaledTexture() {
+        return unscaledTexture;
+    }
+
+    public McComponentTextureEnum getTexType() {
+        return texType;
+    }
+
+    public HashMap<SectorEnum, BufferedImage> getUnscaledSectors() {
+        return unscaledSectors;
+    }
+
+    public HashMap<SectorEnum, BufferedImage> getScaledSectors() {
+        return scaledSectors;
+    }
+
     public static int getGlobalScale() {
         return globalScale;
     }
 
-    public static HashSet<ExpandableTexture> getUpdateWatchList() {
-        return updateWatchList;
+    public int getUsedScale() {
+        return (usedScale < 1)? globalScale : usedScale;
     }
 
-    public static Color getCenterColor(BufferedImage texture){
-        return new Color(texture.getRGB(texture.getWidth() / 2, texture.getHeight() / 2));
-    }
-
-    public static Color getFillingColor(McComponentTextureEnum texType){
-        BufferedImage unscaledTexture = readTexture(texType);
-        Rectangle innerCoords = texType.getInnerCoords();
-        return new Color(unscaledTexture.getRGB(innerCoords.x -1,innerCoords.y -1));
-    }
-
-    public static Color getCenterColor(McComponentTextureEnum texType){
-        return getCenterColor(readTexture(texType));
-    }
-
-    public McComponentTextureEnum getBorderTexType() {
-        return borderTexType;
-    }
-
-    public Color getBorderBackgroundColor() {
-        return borderBackgroundColor;
-    }
-
-    public static BufferedImage getTexture(){
-        return TEXTURE;
+    public Rectangle getInnerRectangle(Dimension outerSize){
+        return new Rectangle(scaledSectors.get(SectorEnum.NW).getWidth(),scaledSectors.get(SectorEnum.NW).getHeight(),outerSize.width-scaledSectors.get(SectorEnum.NW).getWidth()-scaledSectors.get(SectorEnum.NE).getWidth(),outerSize.height-scaledSectors.get(SectorEnum.NE).getHeight()-scaledSectors.get(SectorEnum.ES).getHeight());
     }
 
     //Setter
-    public static void setGlobalScale(int newGlobalScale) {
-        if (newGlobalScale <= 0) throw new IllegalArgumentException("globalScale '"+newGlobalScale+"' must be bigger or equal to 1.");
-        globalScale = newGlobalScale;
-        callUpdatesInWatchList();
+    public static void setGlobalScale(int globalScale) {
+        checkScale(globalScale);
+        ExpandableTexture.globalScale = globalScale;
+        watchList.forEach(expandableTexture -> expandableTexture.alertAction.accept(globalScale));
     }
 
-    public void setBorderTexType(McComponentTextureEnum borderTexType) {
-        this.borderTexType = borderTexType;
+    public void setCustomScale(int customScale){
+        checkScale(customScale);
+        usedScale = customScale;
     }
 
-    public void setBorderBackgroundColor(Color borderBackgroundColor) {
-        this.borderBackgroundColor = borderBackgroundColor;
+    public void setTexType(McComponentTextureEnum texType) {
+        if (this.texType != texType){
+            this.texType = texType;
+            unscaledTexture = readTexture(texType);
+            splitTexture();
+            scaleSectors(getUsedScale());
+        }
     }
 
     //Maker
 
     //Overrides aus
-    ////AbstractBorder
-    @Override
-    public void paintBorder(Component c, Graphics g, int x, int y, int width, int height) {
-        if (getBorderBackgroundColor() == null) {
-            paintTexture(g,new Rectangle(x,y,width,height),getBorderTexType(),DrawSettings.FORCE_PAINTING,DrawSettings.JUST_OUTER,DrawSettings.HOLES_TRANSPARENT);
-        } else {
-            paintTexture(g,new Rectangle(x,y,width,height),getBorderTexType(),getBorderBackgroundColor(),DrawSettings.FORCE_PAINTING,DrawSettings.JUST_OUTER);
-        }
-    }
-
-    @Override
-    public Insets getBorderInsets(Component c) {
-        return getBorderInsets(c,null);
-    }
-
-    @Override
-    public Insets getBorderInsets(Component c, Insets insets) {
-        return new Insets((borderTexType.getMinSize().height/2)*getGlobalScale(),(borderTexType.getMinSize().width/2)*getGlobalScale(),(borderTexType.getMinSize().height/2)*getGlobalScale(),(borderTexType.getMinSize().width/2)*getGlobalScale());
-    }
-
-    @Override
-    public boolean isBorderOpaque() {
-        return !McComponentTextureEnum.PANEL_THIN.hasTransparency();
-    }
+    ////<Oberklasse>
 
     //Interne Klassen
     ////Klasse "<Klassenname>"

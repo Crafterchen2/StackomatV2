@@ -1,6 +1,6 @@
 package com.deckerben.stackomat.components;
 
-import com.deckerben.minecraft.laf.ExpandableTexture;
+import com.deckerben.minecraft.laf.ExpandableBorder;
 import com.deckerben.minecraft.laf.textures.McComponentTextureEnum;
 import com.deckerben.stackomat.ContainerUnitEnum;
 import com.deckerben.stackomat.ItemUnitEnum;
@@ -23,7 +23,7 @@ public class InputPanel extends JPanel {
 
     //Konstruktoren
     public InputPanel(ChangeListener inputListener) {
-        ExpandableTexture border = new ExpandableTexture(true) {
+        ExpandableBorder border = new ExpandableBorder(true) {
             @Override
             protected boolean globalScaleUpdated() {
                 updateUI();
@@ -32,7 +32,7 @@ public class InputPanel extends JPanel {
         };
         border.setBorderTexType(McComponentTextureEnum.PANEL_DARK);
         //setBorder(border);
-        //setBackground(ExpandableTexture.getCenterColor(border.getBorderTexType()));
+        //setBackground(ExpandableBorder.getCenterColor(border.getBorderTexType()));
         setLayout(new BorderLayout());
         JLabel label = new JLabel("Eingabe");
         add(label,BorderLayout.NORTH);
@@ -68,6 +68,9 @@ public class InputPanel extends JPanel {
     }
 
     //Setter
+    public void setRawType(ItemUnitEnum unit){
+        rawItemInput.setUnit(unit);
+    }
 
     //Maker
 

@@ -1,17 +1,18 @@
 package com.deckerben.stackomat.components;
 
-import com.deckerben.minecraft.laf.ExpandableTexture;
+import com.deckerben.minecraft.laf.ExpandableBorder;
 import com.deckerben.stackomat.UnitEnumInterface;
 
 import javax.swing.*;
+import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 import java.awt.*;
 
 public class ItemIOField<U extends UnitEnumInterface> extends JComponent {
 
     //Felder
-    private final boolean IS_INPUT;
-    private final U UNIT;
+    protected final boolean IS_INPUT;
+    private U unit;
     private final SpinnerNumberModel numberModel = new SpinnerNumberModel(0,0,Integer.MAX_VALUE,1);
     protected ItemDisplay<U> iconDisplay;
     private final ChangeListener inputListener;
@@ -22,26 +23,27 @@ public class ItemIOField<U extends UnitEnumInterface> extends JComponent {
 
     //Konstruktoren
     public ItemIOField(final U unit) {
-        IS_INPUT = false;
-        UNIT = unit;
-        inputListener = null;
-        initializeComponent();
+        this(null,unit,false);
     }
 
     public ItemIOField(final ChangeListener inputListener, final U unit){
-        IS_INPUT = true;
-        UNIT = unit;
+        this(inputListener,unit,true);
+    }
+
+    protected ItemIOField(final ChangeListener inputListener, final U unit, boolean input){
+        IS_INPUT = input;
+        this.unit = unit;
         this.inputListener = inputListener;
         initializeComponent();
     }
 
     //Methoden
-    public void initializeComponent(){
+    private void initializeComponent(){
         setOpaque(false);
         setLayout(new BorderLayout());
         JPanel list = new JPanel(new GridLayout(2,1));
         list.setOpaque(false);
-        JLabel nameDisplay = new JLabel(UNIT.getName());
+        JLabel nameDisplay = new JLabel(unit.getName());
         list.add(nameDisplay);
         if (IS_INPUT) {
             JSpinner numSpin = new JSpinner(numberModel);
@@ -54,8 +56,8 @@ public class ItemIOField<U extends UnitEnumInterface> extends JComponent {
             list.add(numDisplay);
         }
         add(list,BorderLayout.CENTER);
-        iconDisplay = new ItemDisplay<>(UNIT,true);
-        iconDisplay.setPreferredSize(new Dimension(24* ExpandableTexture.getGlobalScale(),24* ExpandableTexture.getGlobalScale()));
+        iconDisplay = new ItemDisplay<>(unit,true);
+        iconDisplay.setPreferredSize(new Dimension(24* ExpandableBorder.getGlobalScale(),24* ExpandableBorder.getGlobalScale()));
         add(iconDisplay,BorderLayout.WEST);
     }
 
@@ -68,7 +70,9 @@ public class ItemIOField<U extends UnitEnumInterface> extends JComponent {
         num = numberModel.getNumber().intValue();
     }
 
-    private void updateDisplay(){numDisplay.setText(""+num);}
+    private void updateDisplay(){
+        numDisplay.setText(""+num);
+    }
 
     //Getter
     public boolean isInput() {
@@ -76,7 +80,7 @@ public class ItemIOField<U extends UnitEnumInterface> extends JComponent {
     }
 
     public U getUnit() {
-        return UNIT;
+        return unit;
     }
 
     public int getNum() {
@@ -89,6 +93,12 @@ public class ItemIOField<U extends UnitEnumInterface> extends JComponent {
         updateDisplay();
     }
 
+    public void setUnit(U unit){
+        this.unit = unit;
+        iconDisplay.setUnit(unit);
+        iconDisplay.updateUI();
+    }
+
     /**
      * Die Benutzung der Methode "setNum(int num)" sollte bevorzugt werden.
      * */
@@ -96,8 +106,14 @@ public class ItemIOField<U extends UnitEnumInterface> extends JComponent {
         numDisplay.setText(text);
     }
 
-    public void setItemDisplayEnabled(boolean enabled){
+    protected void setItemDisplayEnabled(boolean enabled){
         iconDisplay.setEnabled(enabled);
+        inputListener.stateChanged(new ChangeEvent(this));
+    }
+
+    protected void toggleItemDisplayEnabled(){
+        iconDisplay.toggleEnabled();
+        inputListener.stateChanged(new ChangeEvent(this));
     }
 
     //Maker

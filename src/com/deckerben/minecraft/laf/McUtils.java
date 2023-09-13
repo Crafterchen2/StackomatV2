@@ -14,7 +14,7 @@ public class McUtils {
         try {
             GraphicsEnvironment ge = GraphicsEnvironment.getLocalGraphicsEnvironment();
             Font font = Font.createFont(Font.TRUETYPE_FONT, Objects.requireNonNull(McUtils.class.getResourceAsStream("/com/deckerben/minecraft/laf/textures/assets/MinecraftRegular.ttf")));
-            rv = font.deriveFont(12f * ExpandableTexture.getGlobalScale());
+            rv = font.deriveFont(12f * ExpandableBorder.getGlobalScale());
             ge.registerFont(font);
         } catch (IOException|FontFormatException e) {
             e.printStackTrace();

@@ -1,6 +1,5 @@
 package com.deckerben.stackomat.components;
 
-import com.deckerben.stackomat.ContainerUnitEnum;
 import com.deckerben.stackomat.Stackomat;
 
 import javax.swing.*;
@@ -11,20 +10,21 @@ public class StackomatPanel extends JPanel {
     //Felder
     private final InputPanel inputPanel = new InputPanel(e -> updateInputs());
     private final OutputPanel outputPanel = new OutputPanel();
-    private final DistributionPanel distributionPanel = new DistributionPanel();
+    private final DistributionPanel distributionPanel = new DistributionPanel(e -> updateInputs());
 
     private final Stackomat stackomat = new Stackomat(true,false);
     private final UnitChooser unitChooser = new UnitChooser(e -> updateUnit());
 
     //Konstruktoren
     public StackomatPanel(){
-        stackomat.setEnabledContainer(ContainerUnitEnum.SHULKER,ContainerUnitEnum.DOUBLE_CHEST,ContainerUnitEnum.SHULKER_IN_DOUBLE_CHEST);
+        stackomat.setEnabledContainer(distributionPanel.getEnabledContainer());
         updateUnit();
         applyLayout();
     }
 
     //Methoden
     private void updateInputs() {
+        stackomat.setEnabledContainer(distributionPanel.getEnabledContainer());
         stackomat.setInputItemNum(inputPanel.getRawItemAmount());
         stackomat.setInputContainer(inputPanel.getInputValues());
         updateOutputs();
@@ -32,6 +32,8 @@ public class StackomatPanel extends JPanel {
 
     private void updateUnit() {
         stackomat.setSelectedItemUnit(unitChooser.getSelectedUnit());
+        inputPanel.setRawType(unitChooser.getSelectedUnit());
+        outputPanel.setStackTypeDisplay(unitChooser.getSelectedUnit());
         updateOutputs();
     }
 

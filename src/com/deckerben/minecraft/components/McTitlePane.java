@@ -1,11 +1,7 @@
 package com.deckerben.minecraft.components;
 
-import com.deckerben.minecraft.laf.ExpandableTexture;
-
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 import java.util.ArrayList;
 
 public class McTitlePane extends JComponent implements MCTitlePaneInterface {

@@ -49,7 +49,7 @@ public class UITest {
         //frame.setVisible(true);
         //frame.setAlwaysOnTop(true);
         //SwingUtilities.updateComponentTreeUI(frame);
-        //ExpandableTexture.setGlobalScale(6);
+        //ExpandableBorder.setGlobalScale(6);
 
         JFrame inFrame = new JFrame();
         inFrame.setContentPane(new JDesktopPane());
@@ -63,7 +63,7 @@ public class UITest {
         inFrame.setLocationRelativeTo(null);
         inFrame.add(internal);
         inFrame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
-        inFrame.setResizable(false);
+        inFrame.setResizable(true);
         inFrame.setVisible(true);
         internal.setVisible(true);
 

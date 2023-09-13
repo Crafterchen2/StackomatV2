@@ -1,8 +1,8 @@
 package com.deckerben.minecraft.laf.ui;
 
 import com.deckerben.minecraft.components.McInternalFrameTitlePane;
-import com.deckerben.minecraft.laf.DrawSettings;
-import com.deckerben.minecraft.laf.ExpandableTexture;
+import com.deckerben.minecraft.laf.BorderDrawSettings;
+import com.deckerben.minecraft.laf.ExpandableBorder;
 import com.deckerben.minecraft.laf.textures.McComponentTextureEnum;
 
 import javax.swing.*;
@@ -11,7 +11,7 @@ import javax.swing.plaf.basic.BasicInternalFrameUI;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 
-import static com.deckerben.minecraft.laf.ExpandableTexture.getGlobalScale;
+import static com.deckerben.minecraft.laf.ExpandableBorder.getGlobalScale;
 
 public class McInternalFrameUI extends BasicInternalFrameUI {
 
@@ -55,7 +55,7 @@ public class McInternalFrameUI extends BasicInternalFrameUI {
     @Override
     public void paint(Graphics g, JComponent c) {
         BufferedImage border = new BufferedImage(c.getWidth(),c.getHeight() + (4 * getGlobalScale()),BufferedImage.TYPE_INT_RGB);
-        ExpandableTexture.paintTexture(g,new Rectangle(c.getWidth(),c.getHeight() + (4 * getGlobalScale())), McComponentTextureEnum.PANEL_THICK, DrawSettings.JUST_OUTER);
+        ExpandableBorder.paintTexture(g,new Rectangle(c.getWidth(),c.getHeight() + (4 * getGlobalScale())), McComponentTextureEnum.PANEL_THICK, BorderDrawSettings.JUST_OUTER);
         g.drawImage(border.getSubimage(0, 4 * getGlobalScale(), c.getWidth(), c.getHeight()),0,0,null);
         //super.paint(g, c);
     }

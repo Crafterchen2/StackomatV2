@@ -1,7 +1,6 @@
 package com.deckerben.minecraft.laf;
 
 import com.deckerben.minecraft.laf.textures.McComponentTextureEnum;
-import com.deckerben.minecraft.laf.textures.borders.McButtonBorder;
 
 import javax.swing.*;
 import javax.swing.plaf.BorderUIResource;
@@ -107,14 +106,7 @@ public class MinecraftUI extends BasicLookAndFeel {
 
         final String borderPkg = mcLafPkg + mcComponentPkg + mcBorderPkg;
 
-        BorderUIResource buttonBorder = new BorderUIResource(new McButtonBorder(false){
-            @Override
-            protected boolean globalScaleUpdated() {
-                return true;
-            }
-        });
-
-        ExpandableTexture expandableInternalFrameBorder = new ExpandableTexture(false) {
+        ExpandableBorder expandableInternalFrameBorder = new ExpandableBorder(false) {
             @Override
             protected boolean globalScaleUpdated() {
                 return true;
@@ -124,7 +116,7 @@ public class MinecraftUI extends BasicLookAndFeel {
         //BorderUIResource internalFrameBorder = new BorderUIResource(expandableInternalFrameBorder);
         BorderUIResource internalFrameBorder = new BorderUIResource(BorderFactory.createEmptyBorder());
 
-        ExpandableTexture expandabelTextfieldBorder = new ExpandableTexture(false) {
+        ExpandableBorder expandabelTextfieldBorder = new ExpandableBorder(false) {
             @Override
             protected boolean globalScaleUpdated() {
                 return true;
@@ -133,7 +125,7 @@ public class MinecraftUI extends BasicLookAndFeel {
         expandabelTextfieldBorder.setBorderTexType(McComponentTextureEnum.TEXTFIELD);
         BorderUIResource textfieldBorder = new BorderUIResource(expandabelTextfieldBorder);
 
-        /*ExpandableTexture expandabelSpinnerBorder = new ExpandableTexture(false) {
+        /*ExpandableBorder expandabelSpinnerBorder = new ExpandableBorder(false) {
             @Override
             protected boolean globalScaleUpdated() {
                 return true;
@@ -145,36 +137,36 @@ public class MinecraftUI extends BasicLookAndFeel {
         FontUIResource defaultFont = new FontUIResource(McUtils.getMcFont().deriveFont(20f));
 
         Object[] defaults = {
-                "Button.border", buttonBorder,
+                "Button.border", BorderFactory.createEmptyBorder(),
                 "Button.font", defaultFont,
-                "Button.background", ExpandableTexture.getCenterColor(McComponentTextureEnum.BUTTON),
-                "Button.disabledBackground", ExpandableTexture.getCenterColor(McComponentTextureEnum.BUTTON_DISABLED),
+                "Button.background", ExpandableBorder.getCenterColor(McComponentTextureEnum.BUTTON),
+                "Button.disabledBackground", ExpandableBorder.getCenterColor(McComponentTextureEnum.BUTTON_DISABLED),
 
                 "Panel.font", defaultFont,
-                //"Panel.background", ExpandableTexture.getFillingColor(McComponentTextureEnum.PANEL_THICK),
+                //"Panel.background", ExpandableBorder.getFillingColor(McComponentTextureEnum.PANEL_THICK),
                 //"Panel.border", panelBorder,
 
-                "ToggleButton.border", buttonBorder,
+                "ToggleButton.border", BorderFactory.createEmptyBorder(),
                 "ToggleButton.font", defaultFont,
-                "ToggleButton.background", ExpandableTexture.getCenterColor(McComponentTextureEnum.BUTTON),
-                "ToggleButton.selectedBackground", ExpandableTexture.getCenterColor(McComponentTextureEnum.TOGGLEBUTTON_SELECTED),
-                "ToggleButton.disabledBackground", ExpandableTexture.getCenterColor(McComponentTextureEnum.BUTTON_DISABLED),
+                "ToggleButton.background", ExpandableBorder.getCenterColor(McComponentTextureEnum.BUTTON),
+                "ToggleButton.selectedBackground", ExpandableBorder.getCenterColor(McComponentTextureEnum.TOGGLEBUTTON_SELECTED),
+                "ToggleButton.disabledBackground", ExpandableBorder.getCenterColor(McComponentTextureEnum.BUTTON_DISABLED),
 
                 "Label.font", defaultFont,
                 "Label.foreground", new ColorUIResource(Color.WHITE),
                 //"Label.border", labelBorder,
-                //"Label.background", ExpandableTexture.getCenterColor(McComponentTextureEnum.TEXTFIELD),
+                //"Label.background", ExpandableBorder.getCenterColor(McComponentTextureEnum.TEXTFIELD),
                 //"Label.iconBackgroundType", McComponentTextureEnum.PANEL_THIN.name(),
 
                 "Spinner.font", defaultFont,
                 //"Spinner.border", textfieldBorder,
-                //"Spinner.background", ExpandableTexture.getCenterColor(McComponentTextureEnum.TEXTFIELD),
+                //"Spinner.background", ExpandableBorder.getCenterColor(McComponentTextureEnum.TEXTFIELD),
                 "Spinner.foreground", new ColorUIResource(Color.WHITE),
 
                 "InternalFrame.border", internalFrameBorder,
                 "InternalFrame.borderColor", new ColorUIResource(0,0,0),
                 "InternalFrame.titleFont", defaultFont,
-                "InternalFrame.background", ExpandableTexture.getFillingColor(McComponentTextureEnum.PANEL_THICK),
+                "InternalFrame.background", ExpandableBorder.getFillingColor(McComponentTextureEnum.PANEL_THICK),
 
                 "DesktopIcon.border", null,
         };

@@ -1,14 +1,20 @@
 package com.deckerben.minecraft.laf.ui;
 
+import com.deckerben.minecraft.laf.DrawSettings;
+import com.deckerben.minecraft.laf.ExpandableTexture;
+import com.deckerben.minecraft.laf.textures.McComponentTextureEnum;
+
 import javax.swing.*;
 import javax.swing.plaf.ComponentUI;
 import javax.swing.plaf.basic.BasicButtonUI;
 import java.awt.*;
+import java.util.ArrayList;
 
 public class McButtonUI extends BasicButtonUI {
 
     //Felder
     private boolean isAlreadyRollover = false;
+    private final ExpandableTexture texture = new ExpandableTexture(McComponentTextureEnum.BUTTON);
 
     //Listener
 
@@ -26,11 +32,27 @@ public class McButtonUI extends BasicButtonUI {
     ////ComponentUI
     @Override
     public void update(Graphics g, JComponent c) {
-        if (c.isOpaque()) {
-            if (c.isEnabled()) g.setColor(UIManager.getColor("Button.background"));
-                else g.setColor(UIManager.getColor("Button.disabledBackground"));
-            g.fillRect(0, 0, c.getWidth(),c.getHeight());
+        ButtonModel model = ((AbstractButton)c).getModel();
+        DrawSettings holeSetting = DrawSettings.NOT_SET;
+        if (!c.isOpaque()) holeSetting = DrawSettings.HOLES_TRANSPARENT;
+        if (model.isEnabled()) {
+            if (model.isRollover()||model.isPressed()) {
+                if (model.isPressed()) {
+                    //pressed
+                    texture.setTexType(McComponentTextureEnum.BUTTON_PRESSED);
+                }   else {
+                    //hovered
+                    texture.setTexType(McComponentTextureEnum.BUTTON_HOVERED);
+                }
+            }   else {
+                //normal
+                texture.setTexType(McComponentTextureEnum.BUTTON);
+            }
+        }   else {
+            //disabled
+            texture.setTexType(McComponentTextureEnum.BUTTON_DISABLED);
         }
+        texture.paintTexture(g,new Rectangle(c.getSize()),Color.BLACK, holeSetting);
         paint(g, c);
     }
 

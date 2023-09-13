@@ -84,15 +84,17 @@ public class Stackomat{
             if (outputContainer.containsKey(units[i])) {
                 outputContainer.replace(units[i],slotNum / units[i].getAmount());
                 slotNum -= alreadySortedSlots(units[i]);
-                smallestUnitIndex = Integer.valueOf(i);
+                smallestUnitIndex = i;//Integer.valueOf(i);
                 occupiedSlots += units[i].getAmount() * outputContainer.get(units[i]);
             }
         }
-        if (slotNum > 0) {
-            outputContainer.replace(units[smallestUnitIndex], outputContainer.get(units[smallestUnitIndex]) + 1);
-            occupiedSlots += units[smallestUnitIndex].getAmount();
-        }
-        fillPercent = (double) (outputFullSlotNum + Math.min(overflowNum,1)) / (double) occupiedSlots;
+        if (outputContainer.size() >0) {
+            if (slotNum > 0) {
+                outputContainer.replace(units[smallestUnitIndex], outputContainer.get(units[smallestUnitIndex]) + 1);
+                occupiedSlots += units[smallestUnitIndex].getAmount();
+            }
+            fillPercent = (double) (outputFullSlotNum + Math.min(overflowNum,1)) / (double) occupiedSlots;
+        }   else fillPercent = 0;
     }
 
     private void autoCalc(){

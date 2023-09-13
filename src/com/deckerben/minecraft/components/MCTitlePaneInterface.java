@@ -1,7 +1,7 @@
 package com.deckerben.minecraft.components;
 
-import com.deckerben.minecraft.laf.DrawSettings;
-import com.deckerben.minecraft.laf.ExpandableTexture;
+import com.deckerben.minecraft.laf.BorderDrawSettings;
+import com.deckerben.minecraft.laf.ExpandableBorder;
 import com.deckerben.minecraft.laf.textures.McComponentTextureEnum;
 
 import javax.swing.*;
@@ -9,7 +9,7 @@ import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.util.ArrayList;
 
-import static com.deckerben.minecraft.laf.ExpandableTexture.getGlobalScale;
+import static com.deckerben.minecraft.laf.ExpandableBorder.getGlobalScale;
 
 public interface MCTitlePaneInterface {
 
@@ -27,15 +27,15 @@ public interface MCTitlePaneInterface {
      */
     default void paintTitlePane(Graphics g){
         final BufferedImage border = new BufferedImage(getTargetWidth(), getTargetHeight(),BufferedImage.TYPE_INT_RGB);
-        ExpandableTexture.paintTexture(border.getGraphics(),new Rectangle(getTargetWidth(), getTargetHeight() + 4 * getGlobalScale()), McComponentTextureEnum.PANEL_THICK, DrawSettings.JUST_OUTER);
+        ExpandableBorder.paintTexture(border.getGraphics(),new Rectangle(getTargetWidth(), getTargetHeight() + 4 * getGlobalScale()), McComponentTextureEnum.PANEL_THICK, BorderDrawSettings.JUST_OUTER);
         g.setPaintMode();
         g.drawImage(border,0,0,null);
-        g.setColor(ExpandableTexture.getFillingColor(McComponentTextureEnum.PANEL_THICK));
+        g.setColor(ExpandableBorder.getFillingColor(McComponentTextureEnum.PANEL_THICK));
         g.fillRect(4 * getGlobalScale(), 4 * getGlobalScale(), getTargetWidth() - (8 * getGlobalScale()), getTargetHeight() - (4 * getGlobalScale()));
-        BufferedImage image = ExpandableTexture.readTexture(McComponentTextureEnum.PANEL_THICK);
-        image = ExpandableTexture.scaleTexture(image,getGlobalScale());
+        BufferedImage image = ExpandableBorder.readTexture(McComponentTextureEnum.PANEL_THICK);
+        image = ExpandableBorder.scaleTexture(image,getGlobalScale());
         BufferedImage outerCorner = image.getSubimage(1+(9*getGlobalScale()), 0, 3 * getGlobalScale(), 3 * getGlobalScale());
-        BufferedImage innerCorner = ExpandableTexture.getTexture().getSubimage(19,13,3,3);
+        BufferedImage innerCorner = ExpandableBorder.getTexture().getSubimage(19,13,3,3);
         g.setColor(Color.BLACK);
         g.fillRect(getTargetWidth() - (3 * getGlobalScale()), 9 * getGlobalScale(),3 * getGlobalScale(),3 * getGlobalScale());
         g.drawImage(outerCorner, getTargetWidth() - (3 * getGlobalScale()), 9 * getGlobalScale(), null);
@@ -44,7 +44,7 @@ public interface MCTitlePaneInterface {
         g.drawImage(innerCorner, getTargetWidth() - (getNumButtons() * getButtonSquareSize()) - (3 * getGlobalScale()),9 * getGlobalScale(),3 * getGlobalScale(),3 * getGlobalScale(),null);
         g.drawImage(image.getSubimage(1+(9*getGlobalScale()),3* getGlobalScale(),3* getGlobalScale(),getGlobalScale()), getTargetWidth() - (getNumButtons() * getButtonSquareSize()) - (3 * getGlobalScale()),3 * getGlobalScale(), 3 * getGlobalScale(), 6 * getGlobalScale(),null);
         g.drawImage(image.getSubimage(1+(8*getGlobalScale()),0,getGlobalScale(),3* getGlobalScale()), getTargetWidth() - (getNumButtons() * getButtonSquareSize()),9 * getGlobalScale(),(getNumButtons() * getButtonSquareSize()) - 3 * getGlobalScale(),3 * getGlobalScale(),null);
-        g.setColor(ExpandableTexture.getCenterColor(McComponentTextureEnum.PANEL_THIN));
+        g.setColor(ExpandableBorder.getCenterColor(McComponentTextureEnum.PANEL_THIN));
         g.fillRect(4 * getGlobalScale(), 13 * getGlobalScale(), getTargetWidth() - (8 * getGlobalScale()), getTargetHeight() - (13 * getGlobalScale()));
     }
     
@@ -142,7 +142,7 @@ public interface MCTitlePaneInterface {
     boolean isIconifiable();
     int getTargetWidth();
     default int getTargetHeight(){
-        return 15 * ExpandableTexture.getGlobalScale();
+        return 15 * ExpandableBorder.getGlobalScale();
     }
     JButton getCloseButton();
     JButton getMaxButton();

@@ -1,6 +1,6 @@
 package com.deckerben.stackomat.components;
 
-import com.deckerben.minecraft.laf.ExpandableTexture;
+import com.deckerben.minecraft.laf.ExpandableBorder;
 import com.deckerben.minecraft.laf.textures.McComponentTextureEnum;
 import com.deckerben.stackomat.ContainerUnitEnum;
 import com.deckerben.stackomat.ItemUnitEnum;
@@ -18,7 +18,7 @@ public class OutputPanel extends JPanel {
 
     //Konstruktoren
     public OutputPanel() {
-        ExpandableTexture border = new ExpandableTexture(true) {
+        ExpandableBorder border = new ExpandableBorder(true) {
             @Override
             protected boolean globalScaleUpdated() {
                 updateUI();
@@ -27,7 +27,7 @@ public class OutputPanel extends JPanel {
         };
         border.setBorderTexType(McComponentTextureEnum.PANEL_DARK);
         //setBorder(border);
-        //setBackground(ExpandableTexture.getCenterColor(border.getBorderTexType()));
+        //setBackground(ExpandableBorder.getCenterColor(border.getBorderTexType()));
         setLayout(new BorderLayout());
         JLabel label = new JLabel("Ausgabe");
         add(label,BorderLayout.NORTH);
@@ -51,6 +51,10 @@ public class OutputPanel extends JPanel {
 
     public void setStacks(int stackCount, int overflow){
         stackOutput.forceDisplayMessage(stackCount+" + "+overflow);
+    }
+
+    public void setStackTypeDisplay(ItemUnitEnum unit){
+        totalItemsOutput.setUnit(unit);
     }
 
     //Maker
